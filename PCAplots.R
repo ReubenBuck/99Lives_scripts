@@ -1,3 +1,4 @@
+rm(list = ls())
 options(stringsAsFactors = FALSE)
 library(vcfR)
 library(RColorBrewer)
@@ -73,6 +74,34 @@ points(k.choice, k.explained[k.choice], pch = 16, col = 2)
 dev.off()
 
 k.clust <- kmeans(pca.cc$x[,1:dim.choice], centers = k.choice)
+k.clust <- meanShift(pca.cc$x[,1:2])
+
+
+h.clust <- hclust(dist(pca.cc$x[,1:dim.choice]), method = "average")
+h.clust <- hclust(dist(gt.num.cc), method = "average")
+plot(as.dendrogram(h.clust))
+h.cut <- cutree(h.clust, k = 11)
+plot(as.dendrogram(h.clust), col = h.cut)
+
+
+cols <- c(brewer.pal(8, "Set2"),brewer.pal(8, "Dark2"))
+plot(pca.cc$x[,c(1,2)],
+     col = scales::alpha(cols[h.cut], .7), 
+     pch = 16)
+
+text(agg[,c("PC1","PC2")],
+     labels = 1:k.choice, col= 1, cex = 2.3, font = 2 
+     #pos = sample(1:4, size = k.choice, replace = TRUE)
+)
+# we can use some sort of iterativer k means to choose the number of clusters, but ultimately use dendrogram to cut.
+
+# at each cut height we can look at within ss and between ss
+
+
+agg <- aggregate(pca.cc$x[,1:dim.choice], median, by = list(h.cut))
+
+
+
 
 
 
@@ -83,11 +112,14 @@ pdf(file = "/mnt/raid/projects/99Lives_analysis/result/PCA_result/biplot.pdf")
 par(mar = c(5,5,5,2))
 cols <- c(brewer.pal(8, "Set2"),brewer.pal(8, "Dark2"))
 plot(pca.cc$x[,c(1,2)],
-     col = scales::alpha(cols[k.clust$cluster], .5), 
+     col = scales::alpha(cols[h.cut], .7), 
      pch = 16)
+
 text(k.clust$centers[,1:2],
-     labels = 1:k.choice, col= cols[1:k.choice], cex = 2, font = 2, 
-     pos = sample(1:4, size = k.choice,replace = TRUE))
+     labels = 1:k.choice, col= 1, cex = 2.3, font = 2 
+     #pos = sample(1:4, size = k.choice, replace = TRUE)
+)
+
 
 df <- data.frame(as.character(meta_data$breed), k.clust$cluster)
 df.tab <- table(df)
