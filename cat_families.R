@@ -6,12 +6,12 @@ library(RColorBrewer)
 
 
 #system("rm ~/Desktop/TMP/data.gds")
-vcf.fn <- "/mnt/raid/projects/99Lives_analysis/vcf_200117/thin_snps/combined.thin_1kb.vcf.gz"
-snpgdsVCF2GDS(vcf.fn,"~/Desktop/TMP/data.gds",method ="biallelic.only")
+#vcf.fn <- "/mnt/raid/projects/99Lives_analysis/vcf_200117/thin_snps/combined.thin_1kb.1maf.vcf.gz"
+#snpgdsVCF2GDS(vcf.fn,"~/Desktop/TMP/data.1maf.gds",method ="biallelic.only")
 
 
 
-genofile <-snpgdsOpen("~/Desktop/TMP/data.gds")
+genofile <-snpgdsOpen("~/Desktop/TMP/data.1maf.gds")
 set.seed(100)
 
 
@@ -24,7 +24,7 @@ snpset <- snpset[!grepl("chrX", names(snpset))]
 str(snpset)
 snpset.id <- unlist(unname(snpset))
 length(snpset.id)
-# 257363 markers after LD pruning at 0.5 with method corr
+# 319815 markers after LD pruning at 0.5 with method corr
 
 
 ibd.robust <- snpgdsIBDKING(genofile, snp.id = snpset.id, autosome.only = FALSE)

@@ -5,7 +5,7 @@ library(SNPRelate)
 
 
 
-genofile <-snpgdsOpen("~/Desktop/TMP/data.gds")
+genofile <-snpgdsOpen("~/Desktop/TMP/data.1maf.gds")
 
 snpset <- snpgdsLDpruning(genofile, ld.threshold=0.5, autosome.only = FALSE)
 str(snpset)
@@ -71,7 +71,9 @@ meta_data <- data.frame(meta_data, fam_info[,2:ncol(fam_info)])
 
 
 
-pdf(file = "~/Desktop/stats.pdf",width = 10, height = 4,onefile = TRUE)
+pdf(file = "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/vcf_stats.pdf",
+    width = 10, height = 4,onefile = TRUE)
+
 par(mar = c(5,5,5,1))
 
 plots <-  c("singleton", "sites", "inbreeding")
@@ -103,8 +105,9 @@ if(trans[i]){
 barplot(x,
         col = scales::alpha(as.character(meta_data2$cluster_col), .5), 
         border = FALSE, yaxt= "n",
-        space = 0, xlab = "Samples",
-        ylab = ylab[i])
+        space = 0, xlab = "Samples")
+
+mtext(side = 2,text = ylab[i],line = 3.75)
 
 points(x = seq(.5,nrow(meta_data2),1)[meta_data2$col != "white"],
        y = rep(0,sum(meta_data2$col != "white")),
@@ -115,7 +118,9 @@ points(x = seq(.5,nrow(meta_data2),1)[meta_data2$col != "white"],
 axis(side = 1, at = cluster_position, labels = NA, 
      tick = TRUE,lwd = 1, lwd.ticks = 1)  
 axis(side = 1, at = cluster_position[seq(1,length(cluster_position),2)], labels = NA, 
-     tick = TRUE,lwd = 0, lwd.ticks = 1, line = .6)  
+     tick = TRUE,lwd = 0, lwd.ticks = 1, line = .6)
+axis(side = 1, at = cluster_position[seq(1,length(cluster_position),2)], labels = NA, 
+     tick = TRUE,lwd = 0, lwd.ticks = 1, line = .3)  
 mtext(text = cluster_names, at = cluster_position, side = 1, 
       line = c(1,.4), col = levels(meta_data2$cluster_col), cex = .9, font = 2)
 bndry <- c(0,cumsum(table(meta_data2$cluster_col)))
@@ -127,7 +132,7 @@ if(trans[i]){
   axis(side = 2, at=ticks, labels=labels, las = 2)
 }else if(expon[i]){
   ticks <- axTicks(2)
-  labels <- sapply(ticks/1e6, function(i) as.expression(bquote(.(i)^ .(6))))
+  labels <- sapply(ticks/1e6, function(i) as.expression(bquote(.(i) %*% 10^6)))
   axis(side = 2, at=ticks, labels=labels, las = 2)
 }else{
   axis(side = 2,las = 2)
@@ -170,15 +175,74 @@ dev.off()
 
 # put together these facts in a way to make sense
 
+write.table(meta_data2,
+            file = "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/collected_vcf_stats.tsv",
+            sep = "\t", quote = FALSE, row.names = FALSE)
 
 ### what other things can we plot?
+num.cols <- c("singleton", "doubleton", "unique_site", 
+              "n.nocall", "n.hom.ref", "n.het", 
+              "n.hom.alt", "sites", "inbreeding")
+
+df.nums <- data.frame(cluster = unique(meta_data2$cluster))
+for(i in num.cols){
+  agg <- aggregate(as.numeric(meta_data2[,i]), by = list(meta_data2$cluster),median)
+  rownames(agg) <- agg$Group.1
+  agg <- agg[df.nums$cluster,]
+  df.nums <- cbind(df.nums, agg$x)
+  colnames(df.nums)[ncol(df.nums)] <- i
+  }
+df.nums.med <- df.nums
 
 
 
-aov_res <- aov(meta_data$doubleton ~ meta_data$cluster)
-summary(aov_res)
-tuk_res <- TukeyHSD(aov_res)
+df.nums <- data.frame(cluster = unique(meta_data2$cluster))
+for(i in num.cols){
+  agg <- aggregate(as.numeric(meta_data2[,i]), by = list(meta_data2$cluster),mean)
+  rownames(agg) <- agg$Group.1
+  agg <- agg[df.nums$cluster,]
+  df.nums <- cbind(df.nums, agg$x)
+  colnames(df.nums)[ncol(df.nums)] <- i
+}
+df.nums.mean <- df.nums
 
-barplot(-log10(sort(tuk_res$`meta_data$cluster`[,4])))
-abline(h = -log10(.05), col = 2)
+
+df.nums <- data.frame(cluster = unique(meta_data2$cluster))
+for(i in num.cols){
+  agg <- aggregate(as.numeric(meta_data2[,i]), by = list(meta_data2$cluster),sd)
+  rownames(agg) <- agg$Group.1
+  agg <- agg[df.nums$cluster,]
+  df.nums <- cbind(df.nums, agg$x)
+  colnames(df.nums)[ncol(df.nums)] <- i
+}
+df.nums.sd <- df.nums
+
+
+write.csv(df.nums.med,
+          "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/stat.median.csv")
+
+write.csv(df.nums.mean,
+          "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/stat.mean.csv")
+
+write.csv(df.nums.sd,
+          "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/stat.sd.csv")
+
+
+
+
+write.table(matrix(c("","Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)","stat"), nrow = 1),
+            append = FALSE, quote = FALSE, 
+            col.names = FALSE, row.names = FALSE, sep = ",",
+            "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/Fstat.csv")
+for(i in num.cols){
+  av <- aov(meta_data2[,i] ~ meta_data2$cluster)
+  sum.av <- summary(av)
+  df.sum <- as.data.frame(sum.av[[1]])
+  df.sum$stat <- i
+  write.table(df.sum,append = TRUE, quote = FALSE, 
+              col.names = FALSE, sep = ",",
+        "/mnt/raid/projects/99Lives_analysis/result/vcfStats/collected_snp_result/Fstat.csv")
+}
+
+
 

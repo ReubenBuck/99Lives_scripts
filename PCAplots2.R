@@ -6,11 +6,11 @@ library(RColorBrewer)
 library(dendextend)
 
 #system("rm ~/Desktop/TMP/data.gds")
-vcf.fn <- "/mnt/raid/projects/99Lives_analysis/vcf_200117/thin_snps/combined.select.chip.vcf.gz"
-snpgdsVCF2GDS(vcf.fn,"~/Desktop/TMP/data.select.gds",method ="biallelic.only")
+#vcf.fn <- "/mnt/raid/projects/99Lives_analysis/vcf_200117/thin_snps/combined.thin_1kb.1maf.vcf.gz"
+#snpgdsVCF2GDS(vcf.fn,"~/Desktop/TMP/data.1maf.gds",method ="biallelic.only")
 
 
-genofile <-snpgdsOpen("~/Desktop/TMP/data.select.gds")
+genofile <-snpgdsOpen("~/Desktop/TMP/data.1maf.gds")
 set.seed(100)
 
 
@@ -42,7 +42,7 @@ names(cols) <- levels(rv$samp.group)
 
 
 
-meta_data <- read.table("/mnt/raid/projects/99Lives_analysis/accessory_data/signalment.tsv.csv", sep= "\t", header = TRUE)
+meta_data <- read.table("/mnt/raid/projects/99Lives_analysis/accessory_data/99Lives_Pheno_LAL.csv", sep= "\t", header = TRUE)
 rownames(meta_data) <- meta_data$LabID
 meta_data <- meta_data[rv$sample.id,]
 
@@ -305,45 +305,6 @@ write.table(df.stats, "/mnt/raid/projects/99Lives_analysis/result/PCA_result/met
             sep = "\t", quote = FALSE, row.names = FALSE)
 
 
-
-
-
-fst.clust <- snpgdsFst(genofile,population = factor(rv$samp.group),snp.id = snpset.id ,autosome.only = FALSE,
-                 method = "W&H02")
-
-fst.breed <- snpgdsFst(genofile,population = factor(df.stats$breed),snp.id = snpset.id ,autosome.only = FALSE,
-                 method = "W&H02")
-
-fst.breed <- snpgdsFst(genofile,population = factor(df.stats$breed_specifc[df.stats$breed != "Random bred" & df.stats$breed != "Cross-breed colony"]),
-                       snp.id = snpset.id ,autosome.only = FALSE,
-                       method = "W&H02", sample.id = df.stats$sample_ID[df.stats$breed != "Random bred" & df.stats$breed != "Cross-breed colony"])
-
-
-fst.institution <- snpgdsFst(genofile,population = factor(df.stats$Institution_symbol),snp.id = snpset.id ,autosome.only = FALSE,
-                       method = "W&H02")
-
-fst.devon <- snpgdsFst(genofile,population = factor(df.stats$cluster == "G013"),snp.id = snpset.id ,autosome.only = FALSE,
-                       method = "W&H02")
-
-plot(fst.devon$FstSNP, pch = 16, cex = .5, 
-     col = cols[rep(1:length(snpset), sapply(snpset,length))])
-
-
-fst.persian <- snpgdsFst(genofile,population = factor(df.stats$cluster == "G010"),
-                         snp.id = snpset.id,autosome.only = FALSE, method = "W&H02")
-
-plot(fst.persian$FstSNP, pch = 16, cex = .5, 
-     col = cols[rep(1:length(snpset), sapply(snpset,length))])
-
-
-
-fst.clust$MeanFst
-fst.breed$MeanFst
-fst.institution$MeanFst
-
-
-hist(fst.clust$FstSNP)
-hist(fst.breed$FstSNP, add = TRUE)
 
 
 
